@@ -1,7 +1,7 @@
 let villas = [];
 
 // Load JSON
-fetch("villas.json")
+fetch("villas.json?v=4", { cache: "no-store" })
   .then(res => res.json())
   .then(data => {
       villas = data;
@@ -75,3 +75,4 @@ function openModal(villa) {
 function closeModal() {
     document.getElementById("villaModal").style.display = "none";
 }
+
