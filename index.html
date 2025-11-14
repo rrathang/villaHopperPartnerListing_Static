@@ -1,46 +1,91 @@
 <!DOCTYPE html>
-<html>
+<html lang="en">
 <head>
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Villa Listings</title>
-    <link rel="stylesheet" href="style.css?v=4"> 
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Villa Hopper - Listings</title>
+
+  <!-- Main styles (version for cache-busting) -->
+  <link rel="stylesheet" href="style.css?v=2">
+
+  <!-- Minimal icon font for icons (optional) -->
+  <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+
 </head>
 <body>
+  <!-- STICKY NAVBAR -->
+  <header class="topbar">
+    <div class="topbar-inner">
+      <div class="brand">Villa Hopper</div>
 
-<h1>Available Villas</h1>
+      <div class="search-wrap">
+        <input id="searchInput" type="search" placeholder="Search by name or location..." />
+      </div>
 
-<div class="container"></div>
-
-<!-- Modal -->
-<div id="villaModal" class="modal">
-    <div class="modal-content">
-
-        <span class="close" onclick="closeModal()">&times;</span>
-
-        <h2 id="villaName"></h2>
-        <p id="villaLocation"></p>
-
-        <div class="tags" id="villaTypes"></div>
-
-        <div class="gallery" id="villaGallery"></div>
-
-        <h3>Description</h3>
-        <p id="villaDescription"></p>
-
-        <h3>Amenities</h3>
-        <ul id="villaAmenities"></ul>
-
-        <h3>Details</h3>
-        <p id="villaRooms"></p>
-        <p id="villaPool"></p>
-        <p id="villaBeachside"></p>
-
+      <div class="actions">
+        <button id="darkToggle" title="Toggle dark mode" aria-label="Toggle dark"><i class="fa fa-moon"></i></button>
+      </div>
     </div>
-</div>
 
-<script src="script.js?v=4"></script>
+    <!-- FILTER CHIPS -->
+    <div class="filters">
+      <button class="chip" data-filter="all">All</button>
+      <button class="chip" data-filter="pool">Pool</button>
+      <button class="chip" data-filter="beachside">Beachside</button>
+      <button class="chip" data-filter="Family">Family</button>
+      <button class="chip" data-filter="Friends">Friends</button>
+      <button class="chip" data-filter="Couple">Couple</button>
+      <button class="chip" data-filter="Corporate">Corporate</button>
+      <button class="chip" data-filter="Events">Events</button>
+    </div>
+  </header>
 
+  <!-- PAGE TITLE -->
+  <main>
+    <h1 class="page-title">Available Villas</h1>
+
+    <!-- CARDS GRID -->
+    <div class="container" id="cardsContainer"></div>
+  </main>
+
+  <!-- MODAL -->
+  <div id="villaModal" class="modal" aria-hidden="true">
+    <div class="modal-content">
+      <button class="close" onclick="closeModal()">&times;</button>
+
+      <h2 id="villaName"></h2>
+      <p id="villaLocation" class="muted"></p>
+
+      <div class="tags" id="villaTypes"></div>
+
+      <!-- Gallery with arrows -->
+      <div class="gallery-wrap">
+        <button class="g-arrow left" id="gPrev" aria-label="Prev image"><i class="fa fa-chevron-left"></i></button>
+        <div class="gallery" id="villaGallery"></div>
+        <button class="g-arrow right" id="gNext" aria-label="Next image"><i class="fa fa-chevron-right"></i></button>
+      </div>
+
+      <h3>Description</h3>
+      <p id="villaDescription"></p>
+
+      <h3>Amenities</h3>
+      <ul id="villaAmenities"></ul>
+
+      <div class="details-row">
+        <div>Rooms: <strong id="villaRooms"></strong></div>
+        <div>Pool: <strong id="villaPool"></strong></div>
+        <div>Beachside: <strong id="villaBeachside"></strong></div>
+      </div>
+
+      <!-- WhatsApp Book button - replace PHONE_NUMBER with your number in script.js -->
+      <div class="modal-actions">
+        <a id="whatsappLink" class="whatsapp-btn" href="#" target="_blank" rel="noopener">📱 Book on WhatsApp</a>
+        <button class="close-btn" onclick="closeModal()">Close</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Scripts (versioned for cache-bust) -->
+  <script src="script.js?v=2"></script>
 </body>
 </html>
-
-
