@@ -5,12 +5,11 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
   <title>Villa Hopper - Listings</title>
 
-  <!-- Main styles (version for cache-busting) -->
-  <link rel="stylesheet" href="style.css?v=2">
+  <!-- CSS (bump version when updating) -->
+  <link rel="stylesheet" href="style.css?v=5">
 
-  <!-- Minimal icon font for icons (optional) -->
+  <!-- Font Awesome for icons -->
   <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-
 </head>
 <body>
   <!-- STICKY NAVBAR -->
@@ -19,7 +18,7 @@
       <div class="brand">Villa Hopper</div>
 
       <div class="search-wrap">
-        <input id="searchInput" type="search" placeholder="Search by name or location..." />
+        <input id="searchInput" type="search" placeholder="Search by name, location or type..." />
       </div>
 
       <div class="actions">
@@ -27,43 +26,60 @@
       </div>
     </div>
 
-    <!-- FILTER CHIPS -->
-    <div class="filters">
-      <button class="chip" data-filter="all">All</button>
-      <button class="chip" data-filter="pool">Pool</button>
-      <button class="chip" data-filter="beachside">Beachside</button>
-      <button class="chip" data-filter="Family">Family</button>
-      <button class="chip" data-filter="Friends">Friends</button>
-      <button class="chip" data-filter="Couple">Couple</button>
-      <button class="chip" data-filter="Corporate">Corporate</button>
-      <button class="chip" data-filter="Events">Events</button>
+    <!-- FILTER ROW -->
+    <div class="filters-row">
+      <div class="left-filters">
+        <select id="roomsFilter" aria-label="Filter by rooms">
+          <option value="all">Rooms: Any</option>
+          <option value="1">1+</option>
+          <option value="2">2+</option>
+          <option value="3">3+</option>
+          <option value="4">4+</option>
+        </select>
+
+        <button class="chip" data-filter="pool">Pool</button>
+        <button class="chip" data-filter="beachside">Beachside</button>
+      </div>
+
+      <div class="right-filters">
+        <!-- type chips -->
+        <button class="chip" data-filter="Family">Family</button>
+        <button class="chip" data-filter="Friends">Friends</button>
+        <button class="chip" data-filter="Couple">Couple</button>
+        <button class="chip" data-filter="Corporate">Corporate</button>
+        <button class="chip" data-filter="Events">Events</button>
+        <button class="chip active" data-filter="all">All</button>
+      </div>
     </div>
   </header>
 
-  <!-- PAGE TITLE -->
   <main>
     <h1 class="page-title">Available Villas</h1>
-
-    <!-- CARDS GRID -->
     <div class="container" id="cardsContainer"></div>
   </main>
 
-  <!-- MODAL -->
+  <!-- MODAL with full-width slider (300px height) -->
   <div id="villaModal" class="modal" aria-hidden="true">
-    <div class="modal-content">
-      <button class="close" onclick="closeModal()">&times;</button>
+    <div class="modal-content" role="dialog" aria-modal="true" aria-labelledby="villaName">
+      <button class="close" onclick="closeModal()" aria-label="Close modal">&times;</button>
 
       <h2 id="villaName"></h2>
       <p id="villaLocation" class="muted"></p>
 
       <div class="tags" id="villaTypes"></div>
 
-      <!-- Gallery with arrows -->
-      <div class="gallery-wrap">
-        <button class="g-arrow left" id="gPrev" aria-label="Prev image"><i class="fa fa-chevron-left"></i></button>
-        <div class="gallery" id="villaGallery"></div>
-        <button class="g-arrow right" id="gNext" aria-label="Next image"><i class="fa fa-chevron-right"></i></button>
+      <!-- Slider -->
+      <div class="slider-wrap">
+        <button class="s-arrow left" id="sPrev" aria-label="Prev"><i class="fa fa-chevron-left"></i></button>
+
+        <div class="slider" id="slider">
+          <div class="slides" id="slides"></div>
+        </div>
+
+        <button class="s-arrow right" id="sNext" aria-label="Next"><i class="fa fa-chevron-right"></i></button>
       </div>
+
+      <div class="dots" id="dots"></div>
 
       <h3>Description</h3>
       <p id="villaDescription"></p>
@@ -77,7 +93,6 @@
         <div>Beachside: <strong id="villaBeachside"></strong></div>
       </div>
 
-      <!-- WhatsApp Book button - replace PHONE_NUMBER with your number in script.js -->
       <div class="modal-actions">
         <a id="whatsappLink" class="whatsapp-btn" href="#" target="_blank" rel="noopener">📱 Book on WhatsApp</a>
         <button class="close-btn" onclick="closeModal()">Close</button>
@@ -85,7 +100,7 @@
     </div>
   </div>
 
-  <!-- Scripts (versioned for cache-bust) -->
-  <script src="script.js?v=2"></script>
+  <!-- Script (bump version when updating) -->
+  <script src="script.js?v=5"></script>
 </body>
 </html>
