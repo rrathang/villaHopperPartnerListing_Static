@@ -1,31 +1,32 @@
 // ---------- CONFIG ----------
-const WHATSAPP_NUMBER = "villahopper70"; // Replace with country code + number, e.g. "919XXXXXXXXX"
-const JSON_PATH = "villas.json?v=2"; // update version when you change JSON
+const WHATSAPP_NUMBER = "YOUR_PHONE_NUMBER"; // e.g. "9198XXXXXXXX"
+const JSON_PATH = "villas.json?v=5";
 
 // ---------- STATE ----------
 let villas = [];
 let filtered = [];
-let activeFilter = "all";
+let activeTypeFilter = "all";
+let activeChips = { pool: false, beachside: false };
+let roomsFilter = "all";
 let searchTerm = "";
 
 // ---------- HELPERS ----------
 const $ = (sel) => document.querySelector(sel);
 const $$ = (sel) => Array.from(document.querySelectorAll(sel));
-
-// debounce
 function debounce(fn, wait=250){ let t; return (...args)=>{ clearTimeout(t); t=setTimeout(()=>fn(...args), wait);}; }
+function escapeHtml(s=""){ return String(s).replace(/[&<>"']/g, m => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]); }
 
-// ---------- LOAD & RENDER ----------
+// ---------- LOAD DATA ----------
 fetch(JSON_PATH, { cache: "no-store" })
   .then(r => r.json())
   .then(data => {
-    // data can be an array or object; accept both
-    villas = Array.isArray(data) ? data : data.villas || [];
+    villas = Array.isArray(data) ? data : (data.villas || data);
     filtered = villas.slice();
     renderCards();
   })
   .catch(err => console.error("Failed to load villas.json:", err));
 
+// ---------- RENDER CARDS ----------
 function renderCards(){
   const container = $("#cardsContainer");
   container.innerHTML = "";
@@ -34,152 +35,220 @@ function renderCards(){
     return;
   }
 
-  filtered.forEach(villa => {
+  filtered.forEach(v => {
     const card = document.createElement("div");
     card.className = "card";
     card.innerHTML = `
-      <img src="${villa.images?.[0] || 'placeholder.jpg'}" alt="${escapeHtml(villa.name)}" loading="lazy">
+      <img src="${v.images?.[0] || 'placeholder.jpg'}" alt="${escapeHtml(v.name)}" loading="lazy">
       <div class="card-body">
-        <h3>${escapeHtml(villa.name)}</h3>
-        <p class="muted">${escapeHtml(villa.location || '')}</p>
+        <h3>${escapeHtml(v.name)}</h3>
+        <p class="muted">${escapeHtml(v.location || '')}</p>
         <button class="btn">View Details</button>
       </div>`;
-    card.onclick = () => openModal(villa);
+    card.addEventListener("click", () => openModal(v));
     container.appendChild(card);
   });
 }
 
-// ---------- SEARCH & FILTER ----------
-$("#searchInput").addEventListener("input", debounce((e)=>{
+// ---------- SEARCH & FILTERS ----------
+$("#searchInput").addEventListener("input", debounce(e=>{
   searchTerm = e.target.value.trim().toLowerCase();
   applyFilters();
 }, 200));
 
 $$(".chip").forEach(chip=>{
-  chip.addEventListener("click", ()=>{
-    $$(".chip").forEach(c=>c.classList.remove("active"));
+  chip.addEventListener("click", (ev)=>{
+    const key = chip.dataset.filter;
+    // pool / beachside toggle handled separately
+    if(key === "pool" || key === "beachside"){
+      activeChips[key] = !activeChips[key];
+      chip.classList.toggle("active", activeChips[key]);
+      applyFilters();
+      return;
+    }
+    if(key === "all"){
+      // reset type chips
+      activeTypeFilter = "all";
+      $$(".chip").forEach(c=>{
+        if(!["pool","beachside"].includes(c.dataset.filter)) c.classList.remove("active");
+      });
+      chip.classList.add("active");
+      applyFilters();
+      return;
+    }
+    // type filters: only one active at a time (you can change to multi-select if desired)
+    activeTypeFilter = key;
+    $$(".chip").forEach(c=>{
+      if(!["pool","beachside"].includes(c.dataset.filter)) c.classList.remove("active");
+    });
     chip.classList.add("active");
-    activeFilter = chip.dataset.filter;
     applyFilters();
   });
 });
 
-// default activate 'All'
-(() => { const all = document.querySelector('.chip[data-filter="all"]'); if(all) all.classList.add("active"); })();
+// rooms dropdown
+$("#roomsFilter").addEventListener("change", (e)=>{
+  roomsFilter = e.target.value;
+  applyFilters();
+});
+
+// initialize 'All' (if present)
+(() => {
+  const allChip = document.querySelector('.chip[data-filter="all"]');
+  if(allChip) allChip.classList.add("active");
+})();
 
 function applyFilters(){
-  filtered = villas.filter(v=>{
-    // search by name or location or types
+  filtered = villas.filter(v => {
+    // search
     const q = searchTerm;
-    let matchesSearch = true;
     if(q){
       const hay = (v.name + " " + (v.location||'') + " " + (v.type||[]).join(' ')).toLowerCase();
-      matchesSearch = hay.includes(q);
+      if(!hay.includes(q)) return false;
     }
 
-    // filter chips
-    let matchesFilter = true;
-    if(activeFilter && activeFilter !== "all"){
-      if(activeFilter === "pool") matchesFilter = !!v.pool;
-      else if(activeFilter === "beachside") matchesFilter = !!v.beachside;
-      else matchesFilter = (v.type || []).includes(activeFilter);
+    // rooms
+    if(roomsFilter !== "all"){
+      const min = Number(roomsFilter);
+      if(!(Number(v.rooms) >= min)) return false;
     }
 
-    return matchesSearch && matchesFilter;
+    // pool & beachside
+    if(activeChips.pool && !v.pool) return false;
+    if(activeChips.beachside && !v.beachside) return false;
+
+    // type
+    if(activeTypeFilter && activeTypeFilter !== "all"){
+      if(!(v.type || []).includes(activeTypeFilter)) return false;
+    }
+
+    return true;
   });
 
   renderCards();
 }
 
-// ---------- MODAL & GALLERY ----------
+// ---------- MODAL + SLIDER (FULL-WIDTH 300px) ----------
+let currentSlide = 0;
+
 function openModal(v){
   $("#villaName").innerText = v.name || "";
   $("#villaLocation").innerText = v.location || "";
   $("#villaDescription").innerText = v.description || "";
 
-  // types/tags
+  // types
   const tC = $("#villaTypes"); tC.innerHTML = "";
-  (v.type || []).forEach(t=>{
-    const sp = document.createElement("span"); sp.className="tag"; sp.innerText = t; tC.appendChild(sp);
-  });
+  (v.type || []).forEach(t => { const sp = document.createElement("span"); sp.className="tag"; sp.innerText=t; tC.appendChild(sp); });
 
   // amenities
   const am = $("#villaAmenities"); am.innerHTML = "";
-  (v.amenities || []).forEach(a=>{
-    const li = document.createElement("li"); li.innerText = a; am.appendChild(li);
-  });
+  (v.amenities || []).forEach(a => { const li = document.createElement("li"); li.innerText=a; am.appendChild(li); });
 
-  $("#villaRooms").innerText = v.rooms || "-";
+  $("#villaRooms").innerText = v.rooms ?? "-";
   $("#villaPool").innerText = v.pool ? "Yes" : "No";
   $("#villaBeachside").innerText = v.beachside ? "Yes" : "No";
 
-  // gallery
-  const gallery = $("#villaGallery"); gallery.innerHTML = "";
-  (v.images || []).forEach(src=>{
+  // build slides
+  const slides = $("#slides");
+  slides.innerHTML = "";
+  (v.images || []).forEach(src => {
+    const s = document.createElement("div");
+    s.className = "slide";
     const img = document.createElement("img");
     img.src = src;
     img.loading = "lazy";
-    gallery.appendChild(img);
+    s.appendChild(img);
+    slides.appendChild(s);
   });
 
-  // WhatsApp link with prefilled message
+  buildDots((v.images || []).length);
+
+  // WhatsApp link
   const base = `https://wa.me/${WHATSAPP_NUMBER}`;
-  const text = encodeURIComponent(`Hi! I want to book ${v.name} (${v.location}). Please help.`);
+  const text = encodeURIComponent(`Hi! I want to book ${v.name} (${v.location}).`);
   $("#whatsappLink").href = `${base}?text=${text}`;
 
-  // open modal
+  // reset slide to 0
+  currentSlide = 0;
+  updateSlider();
+
+  // show modal
   $("#villaModal").style.display = "block";
   $("#villaModal").setAttribute("aria-hidden","false");
-  // attach gallery arrow events
-  setupGalleryArrows();
+
+  // set up arrows and swipe
+  setupSliderControls();
 }
 
-// close modal
 function closeModal(){
   $("#villaModal").style.display = "none";
   $("#villaModal").setAttribute("aria-hidden","true");
 }
 
-// close when click outside
-document.getElementById("villaModal").addEventListener("click",(e)=>{
+// click outside closes
+document.getElementById("villaModal").addEventListener("click", (e)=>{
   if(e.target === document.getElementById("villaModal")) closeModal();
 });
+document.addEventListener("keydown", (e)=>{ if(e.key === "Escape") closeModal(); });
 
-// ESC closes
-document.addEventListener("keydown",(e)=>{ if(e.key === "Escape") closeModal(); });
-
-// ----- gallery navigation -----
-function setupGalleryArrows(){
-  const g = $("#villaGallery");
-  const prev = $("#gPrev"), next = $("#gNext");
-  if(!g) return;
-  prev.onclick = ()=> scrollGallery(g, -1);
-  next.onclick = ()=> scrollGallery(g, 1);
+// slider controls
+function updateSlider(){
+  const slidesEl = $("#slides");
+  slidesEl.style.transform = `translateX(-${currentSlide * 100}%)`;
+  updateDotsActive();
 }
 
-function scrollGallery(g, dir){
-  const children = g.children;
-  if(!children.length) return;
-  const w = children[0].getBoundingClientRect().width + 10; // width + gap
-  g.scrollBy({ left: dir * w, behavior: 'smooth' });
+function setupSliderControls(){
+  const prev = $("#sPrev"), next = $("#sNext");
+  prev.onclick = ()=> { currentSlide = Math.max(0, currentSlide - 1); updateSlider(); };
+  next.onclick = ()=> { const max = $("#slides").children.length - 1; currentSlide = Math.min(max, currentSlide + 1); updateSlider(); };
+
+  // dots click handled in buildDots()
+
+  // touch swipe
+  const slider = $("#slider");
+  let startX = 0, deltaX = 0, isTouch = false;
+  slider.ontouchstart = (e)=> { isTouch = true; startX = e.touches[0].clientX; };
+  slider.ontouchmove = (e)=> { if(!isTouch) return; deltaX = e.touches[0].clientX - startX; };
+  slider.ontouchend = ()=> {
+    if(Math.abs(deltaX) > 40){
+      if(deltaX > 0) { currentSlide = Math.max(0, currentSlide - 1); }
+      else { const max = $("#slides").children.length - 1; currentSlide = Math.min(max, currentSlide + 1); }
+      updateSlider();
+    }
+    startX = 0; deltaX = 0; isTouch = false;
+  };
 }
 
-// small helper to escape text
-function escapeHtml(s=""){ return String(s).replace(/[&<>"']/g, function(m){ return ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'})[m]; }); }
+// dots
+function buildDots(count){
+  const d = $("#dots");
+  d.innerHTML = "";
+  for(let i=0;i<count;i++){
+    const dot = document.createElement("div");
+    dot.className = "dot";
+    dot.dataset.index = i;
+    dot.onclick = ()=> { currentSlide = i; updateSlider(); };
+    d.appendChild(dot);
+  }
+  updateDotsActive();
+}
+function updateDotsActive(){
+  const dots = Array.from($("#dots").children || []);
+  dots.forEach((dot, idx)=> dot.classList.toggle("active", idx === currentSlide));
+}
 
-// ---------- DARK MODE TOGGLE ----------
+// ---------- DARK MODE ----------
 const darkBtn = document.getElementById("darkToggle");
 darkBtn.addEventListener("click", ()=>{
   document.body.classList.toggle("dark");
-  // swap icon
   darkBtn.innerHTML = document.body.classList.contains("dark") ? '<i class="fa fa-sun"></i>' : '<i class="fa fa-moon"></i>';
 });
 
-// ---------- UTILITY: open first villa if param ?id=X (optional) ----------
+// ---------- UTILITY: open from ?open=id ----------
 (function checkQueryOpen(){
   const p = new URLSearchParams(location.search).get('open');
   if(p){
-    // wait until data loads
     const id = Number(p);
     const check = setInterval(()=>{
       const found = villas.find(x=>x.id==id);
@@ -188,5 +257,3 @@ darkBtn.addEventListener("click", ()=>{
     setTimeout(()=>clearInterval(check), 5000);
   }
 })();
-
-
