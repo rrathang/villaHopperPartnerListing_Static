@@ -1,5 +1,5 @@
 // ---------- CONFIG ----------
-const WHATSAPP_NUMBER = "YOUR_PHONE_NUMBER"; // Replace with country code + number, e.g. "919XXXXXXXXX"
+const WHATSAPP_NUMBER = "8838581697"; // Replace with country code + number, e.g. "919XXXXXXXXX"
 const JSON_PATH = "villas.json?v=2"; // update version when you change JSON
 
 // ---------- STATE ----------
@@ -188,3 +188,4 @@ darkBtn.addEventListener("click", ()=>{
     setTimeout(()=>clearInterval(check), 5000);
   }
 })();
+
